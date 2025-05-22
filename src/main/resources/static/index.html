@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Subir PDF de Ticket</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background-color: #f4f4f4;
+      max-width: 600px;
+      margin: auto;
+    }
+    form {
+      background: #fff;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      margin-bottom: 1rem;
+    }
+    input[type="file"], button {
+      width: 100%;
+      padding: 0.8rem;
+      font-size: 1rem;
+      margin-top: 1rem;
+    }
+    button {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    .mensaje {
+      margin-top: 1rem;
+      font-weight: bold;
+      text-align: center;
+    }
+    pre {
+      background: #eee;
+      padding: 1rem;
+      border-radius: 6px;
+      max-height: 250px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Subir PDF de Ticket</h1>
+
+  <form id="uploadPdfForm" enctype="multipart/form-data">
+    <label for="pdfFile">Selecciona el archivo PDF digital del ticket:</label>
+    <input type="file" id="pdfFile" accept="application/pdf" required />
+    <button type="submit">Enviar PDF para escaneo</button>
+    <div class="mensaje" id="pdfMensaje"></div>
+  </form>
+
+  <h2>Datos extraídos del PDF</h2>
+  <pre id="pdfResult">(Aquí se mostrará el texto extraído)</pre>
+
+  <script>
+    const uploadForm = document.getElementById('uploadPdfForm');
+    const fileInput = document.getElementById('pdfFile');
+    const pdfMensaje = document.getElementById('pdfMensaje');
+    const pdfResult = document.getElementById('pdfResult');
+
+    uploadForm.addEventListener('submit', e => {
+      e.preventDefault();
+      pdfMensaje.textContent = '';
+      pdfResult.textContent = '';
+
+      if (!fileInput.files.length) {
+        pdfMensaje.textContent = 'Por favor selecciona un archivo PDF.';
+        pdfMensaje.style.color = 'red';
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      pdfMensaje.textContent = 'Procesando PDF...';
+      pdfMensaje.style.color = 'black';
+
+      fetch('http://localhost:8081/api/tickets/upload-pdf', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Error al procesar el PDF');
+        return response.json();
+      })
+      .then(data => {
+        pdfMensaje.textContent = '✅ PDF procesado correctamente.';
+        pdfMensaje.style.color = 'green';
+
+        // Mostrar datos formateados, no como JSON
+        let resultadoTexto = 
+          `Fecha: ${data.fecha ? data.fecha : 'No encontrado'}\n` +
+          `Precio total: ${data.precioTotal ? data.precioTotal + ' €' : 'No encontrado'}\n` +
+          `Supermercado: ${data.supermercado ? data.supermercado : 'No encontrado'}\n` +
+          `Forma de pago: ${data.formaPago ? data.formaPago : 'No encontrado'}`;
+
+        pdfResult.textContent = resultadoTexto;
+      })
+      .catch(err => {
+        pdfMensaje.textContent = '❌ ' + err.message;
+        pdfMensaje.style.color = 'red';
+      });
+    });
+  </script>
+
+</body>
+</html>
