@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,12 +27,26 @@ public class TicketController {
     @PostMapping("/upload-pdf")
     public ResponseEntity<?> subirTicketPdf(@RequestParam("file") MultipartFile file) {
         try {
-            String ticketId = ticketService.uploadPdf(file);
-            System.out.println("Ticket ID: " + ticketId);
-            return ResponseEntity.ok(ticketId);
+            String respuestaJson = ticketService.uploadPdf(file);
+            return ResponseEntity.ok(respuestaJson);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body("Error al procesar el PDF: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/query")
+    public ResponseEntity<?> consultarPdf(@RequestParam String sourceId, @RequestParam String prompt) {
+        try {
+            String respuestaJson = ticketService.consultarPdfConPrompt(sourceId, prompt);
+
+            TicketModel ticket = ticketService.parsearRespuestaYCrearTicket(respuestaJson);
+            TicketModel ticketGuardado = ticketService.crearTicket(ticket);
+
+            return ResponseEntity.ok(ticketGuardado);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error al consultar el PDF: " + e.getMessage());
         }
     }
 
@@ -56,10 +71,5 @@ public class TicketController {
     public ResponseEntity<Void> eliminarTicket(@PathVariable Long id) {
         ticketService.eliminarTicket(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/test")
-    public String testGet() {
-        return "OK";
     }
 }

@@ -40,7 +40,6 @@ public ResponseEntity<?> login(@RequestBody Map<String, String> usuarioLogin) {
 
     Optional<UsuarioModel> usuarioValidado = usuarioService.validarUsuario(nombre, contrasena);
     if (usuarioValidado.isPresent()) {
-        // Devuelve algún JSON, por ejemplo:
         return ResponseEntity.ok(Map.of("mensaje", "Login exitoso", "usuario", usuarioValidado.get().getNombre()));
     } else {
         return ResponseEntity.status(401).body(Map.of("error", "Credenciales inválidas"));
@@ -53,7 +52,6 @@ public ResponseEntity<?> login(@RequestBody Map<String, String> usuarioLogin) {
         return ResponseEntity.ok(usuarioService.obtenerTodos());
     }
 
-    // Opcionales adicionales (por si los necesitas en frontend)
     @GetMapping("/usuarios/{id}")
     public ResponseEntity<?> obtenerPorId(@PathVariable Long id) {
         return usuarioService.obtenerPorId(id)
