@@ -1,20 +1,24 @@
 package com.example.demo.services;
 
 import com.example.demo.models.TicketModel;
-import com.example.demo.models.enums.FormaPago;
-import com.example.demo.models.enums.Supermercado;
+
 import com.example.demo.repositories.TicketRepository;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+
 import java.io.IOException;
-import java.time.LocalDate;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
 
 @Service
 public class TicketService {
@@ -49,51 +53,33 @@ public class TicketService {
         return ticketRepository.findById(id);
     }
 
-    public String extraerTextoDirecto(MultipartFile file) throws IOException {
-        try (PDDocument document = PDDocument.load(file.getInputStream())) {
-            PDFTextStripper stripper = new PDFTextStripper();
-            return stripper.getText(document);
-        }
-    }
+    public String uploadPdf (MultipartFile file) throws IOException {
+        String apiKey = "sec_ufpye2BYKXbY0FjFhnHBtNlhanqV4zNB";
 
-    public TicketModel procesarPdf(MultipartFile file) {
-        try (PDDocument document = PDDocument.load(file.getInputStream())) {
-            PDFTextStripper stripper = new PDFTextStripper();
-            String texto = stripper.getText(document);
-    
-            System.out.println("Texto extraído del PDF:\n" + texto);
-    
-            Pattern patternFecha = Pattern.compile("\\d{2}/\\d{2}/\\d{4}");
-            Matcher matcherFecha = patternFecha.matcher(texto);
-            LocalDate fecha = null;
-            if (matcherFecha.find()) {
-                String[] partes = matcherFecha.group().split("/");
-                fecha = LocalDate.of(
-                    Integer.parseInt(partes[2]),
-                    Integer.parseInt(partes[1]),
-                    Integer.parseInt(partes[0])
-                );
+        // Construir el cuerpo de la solicitud
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("file", new ByteArrayResource(file.getBytes()) {
+            @Override
+            public String getFilename() {
+                return file.getOriginalFilename();
             }
-    
-            Pattern patternPrecio = Pattern.compile("(\\d+[,.]\\d{2})\\s*€");
-            Matcher matcherPrecio = patternPrecio.matcher(texto);
-            Double precioTotal = null;
-            if (matcherPrecio.find()) {
-                precioTotal = Double.parseDouble(matcherPrecio.group(1).replace(",", "."));
-            }
-    
-            TicketModel ticket = new TicketModel();
-            ticket.setFecha(fecha);
-            ticket.setPrecioTotal(precioTotal);
-            ticket.setSupermercado(Supermercado.MERCADONA);
-            ticket.setFormaPago(FormaPago.EFECTIVO);
-    
-            return ticketRepository.save(ticket);
-    
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException("Error al procesar el PDF digital: " + e.getMessage());
-        }
+        });
+
+        // Headers
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.set("x-api-key", apiKey);
+
+        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+        // Enviar solicitud
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<String> response = restTemplate.postForEntity(
+                "https://api.chatpdf.com/v1/sources/add-file",
+                requestEntity,
+                String.class
+        );
+
+        return response.getBody();
     }
-    
-    }
+}

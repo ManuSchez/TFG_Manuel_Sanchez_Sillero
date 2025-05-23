@@ -26,8 +26,9 @@ public class TicketController {
     @PostMapping("/upload-pdf")
     public ResponseEntity<?> subirTicketPdf(@RequestParam("file") MultipartFile file) {
         try {
-            TicketModel ticketCreado = ticketService.procesarPdf(file);
-            return ResponseEntity.ok(ticketCreado);
+            String ticketId = ticketService.uploadPdf(file);
+            System.out.println("Ticket ID: " + ticketId);
+            return ResponseEntity.ok(ticketId);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body("Error al procesar el PDF: " + e.getMessage());

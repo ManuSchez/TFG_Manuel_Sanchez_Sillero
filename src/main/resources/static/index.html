@@ -3,69 +3,231 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Subir PDF de Ticket</title>
+  <title>Gestión de Tickets</title>
   <style>
+    /* Fondo en html para evitar línea rara */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #333;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      padding: 2rem;
-      background-color: #f4f4f4;
-      max-width: 600px;
-      margin: auto;
+      display: flex;
+      justify-content: center;
+      padding: 3rem 2rem;
+      /* No max-width aquí */
     }
-    form {
-      background: #fff;
-      padding: 1.5rem;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      margin-bottom: 1rem;
-    }
-    input[type="file"], button {
+
+    /* Contenedor centrado con max-width para contenido */
+    #contenedor {
+      max-width: 480px;
       width: 100%;
-      padding: 0.8rem;
-      font-size: 1rem;
-      margin-top: 1rem;
+      position: relative;
     }
+
+    form {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+      margin-bottom: 1.5rem;
+      transition: transform 0.3s ease;
+    }
+
+    form:hover {
+      transform: translateY(-5px);
+    }
+
+    input, button {
+      width: 100%;
+      padding: 1rem;
+      font-size: 1.1rem;
+      margin-top: 1rem;
+      box-sizing: border-box;
+      border-radius: 8px;
+      border: 1.5px solid #ddd;
+      transition: border-color 0.3s ease;
+      font-weight: 500;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #2575fc;
+      box-shadow: 0 0 6px #2575fcaa;
+      background-color: #f9fbff;
+    }
+
     button {
-      background-color: #28a745;
+      background-color: #2575fc;
       color: white;
       border: none;
       cursor: pointer;
-      border-radius: 4px;
+      font-weight: 600;
+      box-shadow: 0 5px 15px #1a53c7cc;
     }
+
     button:hover {
-      background-color: #218838;
+      background-color: #1a53c7;
+      box-shadow: 0 8px 20px #1540a1cc;
     }
+
     .mensaje {
       margin-top: 1rem;
-      font-weight: bold;
+      font-weight: 600;
       text-align: center;
+      font-size: 1rem;
+      min-height: 1.3em;
+      color: #444;
     }
+
     pre {
-      background: #eee;
+      background: #f0f4ff;
       padding: 1rem;
-      border-radius: 6px;
-      max-height: 250px;
+      border-radius: 10px;
+      max-height: 280px;
       overflow-y: auto;
       white-space: pre-wrap;
       word-wrap: break-word;
+      font-family: Consolas, monospace;
+      box-shadow: inset 0 0 8px #a3b0ff44;
+      color: #2c3e50;
+    }
+
+    .btn-link {
+      background-color: transparent;
+      color: #2575fc;
+      border: none;
+      padding: 0;
+      font-size: 1rem;
+      cursor: pointer;
+      text-decoration: underline;
+      margin-top: 0.5rem;
+      width: auto;
+      display: inline-block;
+      transition: color 0.3s ease;
+    }
+
+    .btn-link:hover {
+      color: #1a53c7;
+    }
+
+    #bienvenido {
+      display: none;
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: #2575fc;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 12px;
+      font-weight: 600;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      z-index: 1000;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 1rem;
     }
   </style>
 </head>
 <body>
 
-  <h1>Subir PDF de Ticket</h1>
+  <div id="bienvenido"></div>
 
-  <form id="uploadPdfForm" enctype="multipart/form-data">
-    <label for="pdfFile">Selecciona el archivo PDF digital del ticket:</label>
-    <input type="file" id="pdfFile" accept="application/pdf" required />
-    <button type="submit">Enviar PDF para escaneo</button>
-    <div class="mensaje" id="pdfMensaje"></div>
-  </form>
+  <div id="contenedor">
 
-  <h2>Datos extraídos del PDF</h2>
-  <pre id="pdfResult">(Aquí se mostrará el texto extraído)</pre>
+    <!-- FORMULARIO DE INICIO DE SESIÓN -->
+    <form id="loginForm">
+      <h2>Iniciar Sesión</h2>
+      <input type="text" id="loginUser" placeholder="Nombre de usuario" required />
+      <input type="password" id="loginPass" placeholder="Contraseña" required />
+      <button type="submit">Entrar</button>
+      <a href="#" class="btn-link" onclick="mostrarFormulario('registerForm'); return false;">Crear cuenta</a>
+      <div class="mensaje" id="loginMensaje"></div>
+    </form>
+
+    <!-- FORMULARIO DE REGISTRO -->
+    <form id="registerForm" style="display:none;">
+      <h2>Crear Usuario</h2>
+      <input type="text" id="registerUser" placeholder="Nombre de usuario" required />
+      <input type="password" id="registerPass" placeholder="Contraseña" required />
+      <button type="submit">Registrar</button>
+      <a href="#" class="btn-link" onclick="mostrarFormulario('loginForm'); return false;">Volver a iniciar sesión</a>
+      <div class="mensaje" id="registerMensaje"></div>
+    </form>
+
+    <!-- FORMULARIO DE SUBIDA DE PDF -->
+    <form id="uploadPdfForm" style="display:none;" enctype="multipart/form-data">
+      <label for="pdfFile">Selecciona el archivo PDF digital del ticket:</label>
+      <input type="file" id="pdfFile" accept="application/pdf" required />
+      <button type="submit">Enviar PDF para escaneo</button>
+      <div class="mensaje" id="pdfMensaje"></div>
+    </form>
+
+    <h2 id="resultadoTitulo" style="display:none;">Datos extraídos del PDF</h2>
+    <pre id="pdfResult" style="display:none;">(Aquí se mostrará el texto extraído)</pre>
+  </div>
 
   <script>
+    function mostrarFormulario(formId) {
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('registerForm').style.display = 'none';
+      document.getElementById('uploadPdfForm').style.display = 'none';
+      document.getElementById('resultadoTitulo').style.display = 'none';
+      document.getElementById('pdfResult').style.display = 'none';
+
+      document.getElementById(formId).style.display = 'block';
+
+      document.getElementById('loginMensaje').textContent = '';
+      document.getElementById('registerMensaje').textContent = '';
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const nombre = document.getElementById('loginUser').value;
+      const contrasena = document.getElementById('loginPass').value;
+
+      fetch('http://localhost:8081/api/auth/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ nombre, contrasena })
+      })
+      .then(res => res.ok ? res.json() : Promise.reject('Error al iniciar sesión'))
+      .then(data => {
+        document.getElementById('loginMensaje').textContent = '✅ Sesión iniciada correctamente';
+        mostrarFormulario('uploadPdfForm');
+
+        const bienvenidoDiv = document.getElementById('bienvenido');
+        bienvenidoDiv.textContent = `Bienvenido, ${nombre}`;
+        bienvenidoDiv.style.display = 'block';
+      })
+      .catch(err => {
+        document.getElementById('loginMensaje').textContent = '❌ ' + err;
+      });
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const nombre = document.getElementById('registerUser').value;
+      const contrasena = document.getElementById('registerPass').value;
+
+      fetch('http://localhost:8081/api/auth/register', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ nombre, contrasena })
+      })
+      .then(res => res.ok ? res.json() : Promise.reject('Error al registrar'))
+      .then(() => {
+        document.getElementById('registerMensaje').textContent = '✅ Usuario registrado correctamente';
+        mostrarFormulario('loginForm');
+      })
+      .catch(err => {
+        document.getElementById('registerMensaje').textContent = '❌ ' + err;
+      });
+    });
+
     const uploadForm = document.getElementById('uploadPdfForm');
     const fileInput = document.getElementById('pdfFile');
     const pdfMensaje = document.getElementById('pdfMensaje');
@@ -100,14 +262,15 @@
         pdfMensaje.textContent = '✅ PDF procesado correctamente.';
         pdfMensaje.style.color = 'green';
 
-        // Mostrar datos formateados, no como JSON
-        let resultadoTexto = 
-          `Fecha: ${data.fecha ? data.fecha : 'No encontrado'}\n` +
-          `Precio total: ${data.precioTotal ? data.precioTotal + ' €' : 'No encontrado'}\n` +
-          `Supermercado: ${data.supermercado ? data.supermercado : 'No encontrado'}\n` +
-          `Forma de pago: ${data.formaPago ? data.formaPago : 'No encontrado'}`;
+        let resultadoTexto =
+          `Fecha: ${data.fecha || 'No encontrado'}\n` +
+          `Precio total: ${data.precioTotal || 'No encontrado'} €\n` +
+          `Supermercado: ${data.supermercado || 'No encontrado'}\n` +
+          `Forma de pago: ${data.formaPago || 'No encontrado'}`;
 
         pdfResult.textContent = resultadoTexto;
+        document.getElementById('resultadoTitulo').style.display = 'block';
+        pdfResult.style.display = 'block';
       })
       .catch(err => {
         pdfMensaje.textContent = '❌ ' + err.message;
@@ -115,6 +278,5 @@
       });
     });
   </script>
-
 </body>
 </html>
