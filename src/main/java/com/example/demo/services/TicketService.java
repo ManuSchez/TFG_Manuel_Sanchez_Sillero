@@ -1,7 +1,11 @@
 package com.example.demo.services;
 
+import com.example.demo.controllers.dto.ContentResponsDto;
 import com.example.demo.models.TicketModel;
 import com.example.demo.repositories.TicketRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
@@ -10,19 +14,20 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.math.BigDecimal;
+import java.util.*;
 
 @Service
 public class TicketService {
 
     @Autowired
     private TicketRepository ticketRepository;
+
+    // Inyectamos el ObjectMapper que configuraste en JacksonConfig
+    @Autowired
+    private ObjectMapper objectMapper;
 
     private final String apiKey = "sec_ufpye2BYKXbY0FjFhnHBtNlhanqV4zNB";
 
@@ -45,7 +50,7 @@ public class TicketService {
         ticketRepository.deleteById(id);
     }
 
-    public java.util.List<TicketModel> obtenerTodos() {
+    public List<TicketModel> obtenerTodos() {
         return ticketRepository.findAll();
     }
 
@@ -78,10 +83,30 @@ public class TicketService {
         return response.getBody();
     }
 
-    public String consultarPdfConPrompt(String sourceId, String prompt) throws IOException {
+    public ContentResponsDto consultarPdfConPrompt(String sourceId) throws IOException {
         Map<String, Object> body = new HashMap<>();
         body.put("sourceId", sourceId);
-        body.put("query", prompt);
+        List<Map<String, String>> messages = new ArrayList<>();
+        Map<String, String> message = new HashMap<>();
+        message.put("role", "user");
+        message.put("content", "Por favor, extrae del texto del ticket la siguiente información y devuélvela en formato JSON con estas claves:\n\n"
+                + "{\n"
+                + "  \"fecha\": \"YYYY-MM-DD\" o \"No encontrado\",\n"
+                + "  \"supermercado\": \"Nombre del supermercado en mayúsculas o 'No encontrado'\",\n"
+                + "  \"precioTotal\": número decimal o \"No encontrado\",\n"
+                + "  \"formaPago\": \"Nombre de la forma de pago en mayúsculas y guiones bajos o 'No encontrado'\"\n"
+                + "}\n\n"
+                + "Si algún dato no está presente o no puede ser extraído, pon el valor \"No encontrado\" para ese campo.\n\n"
+                + "Ejemplo de respuesta:\n\n"
+                + "{\n"
+                + "  \"fecha\": \"2023-05-20\",\n"
+                + "  \"supermercado\": \"MERCADONA\",\n"
+                + "  \"precioTotal\": 45.70,\n"
+                + "  \"formaPago\": \"TARJETA_CREDITO\"\n"
+                + "}");
+
+        messages.add(message);
+        body.put("messages", messages);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -90,16 +115,35 @@ public class TicketService {
         HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
         RestTemplate restTemplate = new RestTemplate();
-        String url = "https://api.chatpdf.com/v1/sources/query";
+        String url = "https://api.chatpdf.com/v1/chats/message";
 
-        ResponseEntity<String> response = restTemplate.postForEntity(url, requestEntity, String.class);
+        ResponseEntity<ContentResponsDto> response = restTemplate.postForEntity(url, requestEntity, ContentResponsDto.class);
+        ContentResponsDto responseBody = response.getBody();
 
-        return response.getBody();
+        String content = responseBody.getContent().trim();
+
+        // Limpiar comillas invertidas si existen
+        if (content.startsWith("```") || content.startsWith("`")) {
+            content = content.replaceAll("```(json)?", "").trim();
+        }
+
+        try {
+            // Usamos ObjectMapper inyectado, que ya tiene JavaTimeModule registrado
+            TicketModel ticket = objectMapper.readValue(content, TicketModel.class);
+            System.out.println("Ticket mapeado correctamente: " + ticket);
+        } catch (Exception e) {
+            System.err.println("Contenido recibido NO es JSON válido:");
+            System.err.println(content);
+            throw e;
+        }
+
+        System.out.println("Contenido del prompt: " + content);
+
+        return responseBody;
     }
 
     public TicketModel parsearRespuestaYCrearTicket(String jsonRespuesta) throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode root = mapper.readTree(jsonRespuesta);
+        JsonNode root = objectMapper.readTree(jsonRespuesta);
 
         String textoRespuesta = root.path("answer").asText();
 
@@ -116,9 +160,10 @@ public class TicketService {
         if (textoRespuesta.contains("precio:")) {
             String precioStr = textoRespuesta.split("precio:")[1].split(",")[0].trim();
             try {
-                ticket.setPrecioTotal(Double.parseDouble(precioStr));
+                BigDecimal precio = new BigDecimal(precioStr);
+                ticket.setPrecioTotal(precio);
             } catch (NumberFormatException e) {
-                ticket.setPrecioTotal(0.0);
+                ticket.setPrecioTotal(BigDecimal.ZERO);
             }
         }
         if (textoRespuesta.contains("formaPago:")) {

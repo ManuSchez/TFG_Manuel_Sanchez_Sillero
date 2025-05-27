@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Gestión de Tickets</title>
   <style>
-    /* Fondo en html para evitar línea rara */
     html, body {
       height: 100%;
       margin: 0;
@@ -19,10 +18,8 @@
       display: flex;
       justify-content: center;
       padding: 3rem 2rem;
-      /* No max-width aquí */
     }
 
-    /* Contenedor centrado con max-width para contenido */
     #contenedor {
       max-width: 480px;
       width: 100%;
@@ -84,37 +81,65 @@
       color: #444;
     }
 
-    pre {
-      background: #f0f4ff;
-      padding: 1rem;
+    /* Tabla estética y moderna */
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 10px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(37, 117, 252, 0.3);
+      font-size: 1.1rem;
+      overflow: hidden;
+      font-weight: 500;
+    }
+
+    thead tr {
+      background: #2575fc;
+      color: white;
+      font-weight: 700;
+      border-radius: 12px;
+      box-shadow: 0 3px 8px rgba(37, 117, 252, 0.5);
+      user-select: none;
+    }
+
+    thead th {
+      padding: 1rem 1.5rem;
+      text-align: left;
+      font-weight: 700;
+    }
+
+    tbody tr {
+      background: #f5f8ff;
+      box-shadow: 0 4px 12px rgba(37, 117, 252, 0.1);
       border-radius: 10px;
-      max-height: 280px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      font-family: Consolas, monospace;
-      box-shadow: inset 0 0 8px #a3b0ff44;
-      color: #2c3e50;
+      transition: background-color 0.25s ease;
+      cursor: default;
     }
 
-    .btn-link {
-      background-color: transparent;
-      color: #2575fc;
-      border: none;
-      padding: 0;
-      font-size: 1rem;
-      cursor: pointer;
-      text-decoration: underline;
-      margin-top: 0.5rem;
-      width: auto;
-      display: inline-block;
-      transition: color 0.3s ease;
+    tbody tr:hover {
+      background-color: #d0e2ff;
     }
 
-    .btn-link:hover {
-      color: #1a53c7;
+    tbody td {
+      padding: 1rem 1.5rem;
+      border-left: 4px solid transparent;
+      transition: border-color 0.3s ease;
     }
 
+    tbody td:first-child {
+      font-weight: 600;
+      color: #1a3d8f;
+      border-left-color: #2575fc;
+      border-radius: 10px 0 0 10px;
+    }
+
+    tbody td:last-child {
+      border-radius: 0 10px 10px 0;
+      color: #0d1b47;
+    }
+
+    /* Mensaje bienvenido */
     #bienvenido {
       display: none;
       position: fixed;
@@ -166,8 +191,17 @@
       <div class="mensaje" id="pdfMensaje"></div>
     </form>
 
-    <h2 id="resultadoTitulo" style="display:none;">Datos extraídos del PDF</h2>
-    <pre id="pdfResult" style="display:none;">(Aquí se mostrará el texto extraído)</pre>
+    <h2 id="resultadoTitulo" style="display:none; margin-top: 1.5rem;">Datos extraídos del PDF</h2>
+
+    <table id="datosTabla" style="display:none;">
+      <thead>
+        <tr><th>Campo</th><th>Valor</th></tr>
+      </thead>
+      <tbody>
+        <!-- Se llenará dinámicamente -->
+      </tbody>
+    </table>
+
   </div>
 
   <script>
@@ -176,14 +210,16 @@
       document.getElementById('registerForm').style.display = 'none';
       document.getElementById('uploadPdfForm').style.display = 'none';
       document.getElementById('resultadoTitulo').style.display = 'none';
-      document.getElementById('pdfResult').style.display = 'none';
+      document.getElementById('datosTabla').style.display = 'none';
 
       document.getElementById(formId).style.display = 'block';
 
       document.getElementById('loginMensaje').textContent = '';
       document.getElementById('registerMensaje').textContent = '';
+      document.getElementById('pdfMensaje').textContent = '';
     }
 
+    // Login
     document.getElementById('loginForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const nombre = document.getElementById('loginUser').value;
@@ -208,6 +244,7 @@
       });
     });
 
+    // Registro
     document.getElementById('registerForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const nombre = document.getElementById('registerUser').value;
@@ -228,15 +265,18 @@
       });
     });
 
+    // Subida y procesamiento PDF
     const uploadForm = document.getElementById('uploadPdfForm');
     const fileInput = document.getElementById('pdfFile');
     const pdfMensaje = document.getElementById('pdfMensaje');
-    const pdfResult = document.getElementById('pdfResult');
+    const tabla = document.getElementById('datosTabla');
+    const tbody = tabla.querySelector('tbody');
+    const tituloResultado = document.getElementById('resultadoTitulo');
 
     uploadForm.addEventListener('submit', e => {
       e.preventDefault();
       pdfMensaje.textContent = '';
-      pdfResult.textContent = '';
+      pdfMensaje.style.color = 'black';
 
       if (!fileInput.files.length) {
         pdfMensaje.textContent = 'Por favor selecciona un archivo PDF.';
@@ -248,7 +288,6 @@
       formData.append('file', fileInput.files[0]);
 
       pdfMensaje.textContent = 'Procesando PDF...';
-      pdfMensaje.style.color = 'black';
 
       fetch('http://localhost:8081/api/tickets/upload-pdf', {
         method: 'POST',
@@ -259,18 +298,35 @@
         return response.json();
       })
       .then(data => {
+        tbody.innerHTML = '';
+
+        for (const [clave, valor] of Object.entries(data)) {
+          if (clave.toLowerCase() === 'id') continue; // No mostrar fila id
+
+          const tr = document.createElement('tr');
+          const tdClave = document.createElement('td');
+          tdClave.textContent = clave.charAt(0).toUpperCase() + clave.slice(1);
+          tdClave.style.fontWeight = '600';
+
+          const tdValor = document.createElement('td');
+          let valorMostrar = (valor === null || valor === '' || valor === undefined) ? 'No encontrado' : valor;
+
+          if (clave.toLowerCase() === 'preciototal') {
+            valorMostrar = valorMostrar + ' €'; // Añadir símbolo euro
+          }
+
+          tdValor.textContent = valorMostrar;
+
+          tr.appendChild(tdClave);
+          tr.appendChild(tdValor);
+          tbody.appendChild(tr);
+        }
+
+        tituloResultado.style.display = 'block';
+        tabla.style.display = 'table';
+
         pdfMensaje.textContent = '✅ PDF procesado correctamente.';
         pdfMensaje.style.color = 'green';
-
-        let resultadoTexto =
-          `Fecha: ${data.fecha || 'No encontrado'}\n` +
-          `Precio total: ${data.precioTotal || 'No encontrado'} €\n` +
-          `Supermercado: ${data.supermercado || 'No encontrado'}\n` +
-          `Forma de pago: ${data.formaPago || 'No encontrado'}`;
-
-        pdfResult.textContent = resultadoTexto;
-        document.getElementById('resultadoTitulo').style.display = 'block';
-        pdfResult.style.display = 'block';
       })
       .catch(err => {
         pdfMensaje.textContent = '❌ ' + err.message;

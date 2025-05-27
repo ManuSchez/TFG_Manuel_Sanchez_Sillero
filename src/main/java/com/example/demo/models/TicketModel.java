@@ -1,12 +1,15 @@
 package com.example.demo.models;
 
+import com.example.demo.models.enums.FormaPago;
+import com.example.demo.models.enums.Supermercado;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Set;
-
-import com.example.demo.models.enums.Supermercado;
-import com.example.demo.models.enums.FormaPago;
 
 @Entity
 @Table(name = "tickets")
@@ -19,15 +22,17 @@ public class TicketModel {
     @Enumerated(EnumType.STRING)
     private Supermercado supermercado;
 
+    @JsonFormat(pattern = "yyyy-MM-dd") // JSON: formato consistente
     private LocalDate fecha;
 
-    private Double precioTotal;
+    private BigDecimal precioTotal;
 
     @Enumerated(EnumType.STRING)
     private FormaPago formaPago;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id")
+    @JsonIgnore // Previene recursión infinita en JSON
     private UsuarioModel usuario;
 
     @ManyToMany
@@ -38,14 +43,12 @@ public class TicketModel {
     )
     private Set<ProductoModel> productos;
 
-    public TicketModel() {
-    }
+    public TicketModel() {}
 
-    // Constructor simple para crear con datos básicos (útil desde el parseo IA)
     public TicketModel(String fechaStr, String supermercadoStr, Double precioTotal, String formaPagoStr) {
         setFechaFromString(fechaStr);
         setSupermercadoFromString(supermercadoStr);
-        this.precioTotal = precioTotal;
+        this.precioTotal = precioTotal != null ? BigDecimal.valueOf(precioTotal) : null;
         setFormaPagoFromString(formaPagoStr);
     }
 
@@ -55,52 +58,29 @@ public class TicketModel {
     public Supermercado getSupermercado() { return supermercado; }
     public void setSupermercado(Supermercado supermercado) { this.supermercado = supermercado; }
 
-    // Setter desde String para supermercado con mapeo seguro
     public void setSupermercadoFromString(String supermercadoStr) {
-        if (supermercadoStr == null) {
-            this.supermercado = null;
-            return;
-        }
-        try {
-            this.supermercado = Supermercado.valueOf(supermercadoStr.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            this.supermercado = null;
-        }
+        this.supermercado = Supermercado.fromString(supermercadoStr);
     }
 
     public LocalDate getFecha() { return fecha; }
     public void setFecha(LocalDate fecha) { this.fecha = fecha; }
 
-    // Setter para fecha desde String con formato ISO (ajustable)
     public void setFechaFromString(String fechaStr) {
-        if (fechaStr == null) {
-            this.fecha = null;
-            return;
-        }
         try {
-            this.fecha = LocalDate.parse(fechaStr, DateTimeFormatter.ISO_DATE);
+            this.fecha = (fechaStr != null) ? LocalDate.parse(fechaStr, DateTimeFormatter.ISO_DATE) : null;
         } catch (Exception e) {
             this.fecha = null;
         }
     }
 
-    public Double getPrecioTotal() { return precioTotal; }
-    public void setPrecioTotal(Double precioTotal) { this.precioTotal = precioTotal; }
+    public BigDecimal getPrecioTotal() { return precioTotal; }
+    public void setPrecioTotal(BigDecimal precioTotal) { this.precioTotal = precioTotal; }
 
     public FormaPago getFormaPago() { return formaPago; }
     public void setFormaPago(FormaPago formaPago) { this.formaPago = formaPago; }
 
-    // Setter desde String para formaPago con mapeo seguro
     public void setFormaPagoFromString(String formaPagoStr) {
-        if (formaPagoStr == null) {
-            this.formaPago = null;
-            return;
-        }
-        try {
-            this.formaPago = FormaPago.valueOf(formaPagoStr.toUpperCase().replace(" ", "_"));
-        } catch (IllegalArgumentException e) {
-            this.formaPago = null;
-        }
+        this.formaPago = FormaPago.fromString(formaPagoStr).orElse(null);
     }
 
     public UsuarioModel getUsuario() { return usuario; }
@@ -108,4 +88,15 @@ public class TicketModel {
 
     public Set<ProductoModel> getProductos() { return productos; }
     public void setProductos(Set<ProductoModel> productos) { this.productos = productos; }
+
+    @Override
+    public String toString() {
+        return "TicketModel{" +
+                "id=" + id +
+                ", supermercado=" + supermercado +
+                ", fecha=" + fecha +
+                ", precioTotal=" + precioTotal +
+                ", formaPago=" + formaPago +
+                '}';
+    }
 }
