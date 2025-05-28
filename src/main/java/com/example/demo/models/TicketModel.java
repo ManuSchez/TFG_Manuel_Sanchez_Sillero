@@ -32,10 +32,10 @@ public class TicketModel {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id")
-    @JsonIgnore // Previene recursión infinita en JSON
+    @JsonIgnore 
     private UsuarioModel usuario;
 
-    @ManyToMany
+    @ManyToMany(cascade = CascadeType.PERSIST)
     @JoinTable(
         name = "ticket_productos",
         joinColumns = @JoinColumn(name = "ticket_id"),

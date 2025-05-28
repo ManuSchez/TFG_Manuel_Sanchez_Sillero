@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.method.P;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,7 +32,7 @@ public class TicketController {
     }
 
     @PostMapping("/upload-pdf")
-    public ResponseEntity<?> subirTicketPdf(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<TicketModel> subirTicketPdf(@RequestParam("file") MultipartFile file, @RequestParam("idUsuario") Long idUsuario) {
         try {
             // Subir el PDF y obtener sourceId
             String respuestaJson = ticketService.uploadPdf(file);
@@ -39,31 +40,20 @@ public class TicketController {
             JsonNode root = objectMapper.readTree(respuestaJson);
             String sourceId = root.get("sourceId").asText();
 
-            // Consultar con prompt para obtener el JSON limpio en string
-            ContentResponsDto response = ticketService.consultarPdfConPrompt(sourceId);
-
-            // Limpiar el contenido de comillas invertidas
-            String content = response.getContent().trim();
-            content = content.replaceAll("```(json)?", "").trim();
-
-            // Mapear el JSON limpio a objeto TicketModel usando el ObjectMapper configurado
-            TicketModel ticket = objectMapper.readValue(content, TicketModel.class);
-
-            // Guardar el ticket en BD (opcional)
-            ticketService.crearTicket(ticket);
-
-            // Retornar el objeto TicketModel directamente
+            TicketModel ticket = ticketService.procesarTicket(sourceId,idUsuario);
+           
             return ResponseEntity.ok(ticket);
 
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body("Error al procesar el PDF: " + e.getMessage());
+            return ResponseEntity.notFound().build();
         }
     }
 
-    @GetMapping
-    public ResponseEntity<List<TicketModel>> obtenerTodos() {
-        return ResponseEntity.ok(ticketService.obtenerTodos());
+    @GetMapping("misTickets/{idUsuario}")
+    public ResponseEntity<List<TicketModel>> obtenerMisTickets(@PathVariable Long idUsuario) {
+
+        return ResponseEntity.ok(ticketService.obtenerMisTickets(idUsuario));
     }
 
     @GetMapping("/{id}")

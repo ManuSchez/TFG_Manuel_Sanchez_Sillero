@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 public enum FormaPago {
-    EFECTIVO, TARJETA, BIZUM, PAYPAL, TRANSFERENCIA;
+    EFECTIVO, TARJETA, BIZUM, PAYPAL, TRANSFERENCIA, NO_ENCONTRADO;
     public static Optional<FormaPago> fromString(String value) {
         if (value == null) return Optional.empty();
         return Arrays.stream(values())

@@ -81,7 +81,6 @@
       color: #444;
     }
 
-    /* Tabla estética y moderna */
     table {
       width: 100%;
       border-collapse: separate;
@@ -106,7 +105,6 @@
     thead th {
       padding: 1rem 1.5rem;
       text-align: left;
-      font-weight: 700;
     }
 
     tbody tr {
@@ -114,7 +112,6 @@
       box-shadow: 0 4px 12px rgba(37, 117, 252, 0.1);
       border-radius: 10px;
       transition: background-color 0.25s ease;
-      cursor: default;
     }
 
     tbody tr:hover {
@@ -124,7 +121,6 @@
     tbody td {
       padding: 1rem 1.5rem;
       border-left: 4px solid transparent;
-      transition: border-color 0.3s ease;
     }
 
     tbody td:first-child {
@@ -139,7 +135,6 @@
       color: #0d1b47;
     }
 
-    /* Mensaje bienvenido */
     #bienvenido {
       display: none;
       position: fixed;
@@ -152,8 +147,20 @@
       font-weight: 600;
       box-shadow: 0 2px 10px rgba(0,0,0,0.2);
       z-index: 1000;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       font-size: 1rem;
+    }
+
+    #bienvenido button {
+      margin-top: 0.5rem;
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      background-color: white;
+      color: #2575fc;
+      font-weight: bold;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     }
   </style>
 </head>
@@ -163,7 +170,6 @@
 
   <div id="contenedor">
 
-    <!-- FORMULARIO DE INICIO DE SESIÓN -->
     <form id="loginForm">
       <h2>Iniciar Sesión</h2>
       <input type="text" id="loginUser" placeholder="Nombre de usuario" required />
@@ -173,7 +179,6 @@
       <div class="mensaje" id="loginMensaje"></div>
     </form>
 
-    <!-- FORMULARIO DE REGISTRO -->
     <form id="registerForm" style="display:none;">
       <h2>Crear Usuario</h2>
       <input type="text" id="registerUser" placeholder="Nombre de usuario" required />
@@ -183,7 +188,6 @@
       <div class="mensaje" id="registerMensaje"></div>
     </form>
 
-    <!-- FORMULARIO DE SUBIDA DE PDF -->
     <form id="uploadPdfForm" style="display:none;" enctype="multipart/form-data">
       <label for="pdfFile">Selecciona el archivo PDF digital del ticket:</label>
       <input type="file" id="pdfFile" accept="application/pdf" required />
@@ -197,11 +201,8 @@
       <thead>
         <tr><th>Campo</th><th>Valor</th></tr>
       </thead>
-      <tbody>
-        <!-- Se llenará dinámicamente -->
-      </tbody>
+      <tbody></tbody>
     </table>
-
   </div>
 
   <script>
@@ -213,13 +214,11 @@
       document.getElementById('datosTabla').style.display = 'none';
 
       document.getElementById(formId).style.display = 'block';
-
       document.getElementById('loginMensaje').textContent = '';
       document.getElementById('registerMensaje').textContent = '';
       document.getElementById('pdfMensaje').textContent = '';
     }
 
-    // Login
     document.getElementById('loginForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const nombre = document.getElementById('loginUser').value;
@@ -232,11 +231,21 @@
       })
       .then(res => res.ok ? res.json() : Promise.reject('Error al iniciar sesión'))
       .then(data => {
+        localStorage.setItem('idUsuario', data);
         document.getElementById('loginMensaje').textContent = '✅ Sesión iniciada correctamente';
         mostrarFormulario('uploadPdfForm');
 
         const bienvenidoDiv = document.getElementById('bienvenido');
-        bienvenidoDiv.textContent = `Bienvenido, ${nombre}`;
+        bienvenidoDiv.innerHTML = `Bienvenido, ${nombre}`;
+
+        const botonVerTickets = document.createElement('button');
+        botonVerTickets.textContent = '📄 Mis tickets';
+        botonVerTickets.addEventListener('click', () => {
+          window.location.href = 'MisTickets.html';
+        });
+
+        bienvenidoDiv.appendChild(document.createElement('br'));
+        bienvenidoDiv.appendChild(botonVerTickets);
         bienvenidoDiv.style.display = 'block';
       })
       .catch(err => {
@@ -244,7 +253,6 @@
       });
     });
 
-    // Registro
     document.getElementById('registerForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const nombre = document.getElementById('registerUser').value;
@@ -265,7 +273,6 @@
       });
     });
 
-    // Subida y procesamiento PDF
     const uploadForm = document.getElementById('uploadPdfForm');
     const fileInput = document.getElementById('pdfFile');
     const pdfMensaje = document.getElementById('pdfMensaje');
@@ -288,8 +295,9 @@
       formData.append('file', fileInput.files[0]);
 
       pdfMensaje.textContent = 'Procesando PDF...';
+      const idUsuario = localStorage.getItem('idUsuario');
 
-      fetch('http://localhost:8081/api/tickets/upload-pdf', {
+      fetch(`http://localhost:8081/api/tickets/upload-pdf?idUsuario=${idUsuario}`, {
         method: 'POST',
         body: formData
       })
@@ -298,36 +306,58 @@
         return response.json();
       })
       .then(data => {
-        tbody.innerHTML = '';
+    tbody.innerHTML = '';
+    
+    for (const [clave, valor] of Object.entries(data)) {
+      if (clave.toLowerCase() === 'id') continue;
 
-        for (const [clave, valor] of Object.entries(data)) {
-          if (clave.toLowerCase() === 'id') continue; // No mostrar fila id
+      const tr = document.createElement('tr');
+      const tdClave = document.createElement('td');
+      tdClave.textContent = clave.charAt(0).toUpperCase() + clave.slice(1);
+      const tdValor = document.createElement('td');
 
-          const tr = document.createElement('tr');
-          const tdClave = document.createElement('td');
-          tdClave.textContent = clave.charAt(0).toUpperCase() + clave.slice(1);
-          tdClave.style.fontWeight = '600';
+      if (clave.toLowerCase() === 'productos' && Array.isArray(valor)) {
+        // Crear subtabla de productos
+        const subTabla = document.createElement('table');
+        subTabla.border = '0';
+        subTabla.cellPadding = '4';
+        subTabla.style.marginTop = '5px';
 
-          const tdValor = document.createElement('td');
-          let valorMostrar = (valor === null || valor === '' || valor === undefined) ? 'No encontrado' : valor;
+        const subTbody = document.createElement('tbody');
 
-          if (clave.toLowerCase() === 'preciototal') {
-            valorMostrar = valorMostrar + ' €'; // Añadir símbolo euro
-          }
+        valor.forEach(producto => {
+          const filaProducto = document.createElement('tr');
+          const subtotal = producto.precio * producto.cantidad;
 
-          tdValor.textContent = valorMostrar;
+          filaProducto.innerHTML = `
+            <td>${producto.nombre}</td>
+            <td>${producto.cantidad}</td>
+            <td>${subtotal.toFixed(2)}€</td>
+          `;
+          subTbody.appendChild(filaProducto);
+        });
 
-          tr.appendChild(tdClave);
-          tr.appendChild(tdValor);
-          tbody.appendChild(tr);
-        }
+        subTabla.appendChild(subTbody);
+        tdValor.appendChild(subTabla);
 
-        tituloResultado.style.display = 'block';
-        tabla.style.display = 'table';
+    } else {
+      // Campo normal
+      let valorMostrar = (valor === null || valor === '') ? 'No encontrado' : valor;
+      if (clave.toLowerCase() === 'preciototal') valorMostrar += ' €';
+      tdValor.textContent = valorMostrar;
+    }
 
-        pdfMensaje.textContent = '✅ PDF procesado correctamente.';
-        pdfMensaje.style.color = 'green';
-      })
+    tr.appendChild(tdClave);
+    tr.appendChild(tdValor);
+    tbody.appendChild(tr);
+  }
+
+  tituloResultado.style.display = 'block';
+  tabla.style.display = 'table';
+  pdfMensaje.textContent = '✅ PDF procesado correctamente.';
+  pdfMensaje.style.color = 'green';
+})
+
       .catch(err => {
         pdfMensaje.textContent = '❌ ' + err.message;
         pdfMensaje.style.color = 'red';

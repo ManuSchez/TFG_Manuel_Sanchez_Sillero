@@ -3,6 +3,7 @@ package com.example.demo.services;
 import com.example.demo.controllers.dto.ContentResponsDto;
 import com.example.demo.models.TicketModel;
 import com.example.demo.repositories.TicketRepository;
+import com.example.demo.repositories.UsuarioRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -24,6 +25,9 @@ public class TicketService {
 
     @Autowired
     private TicketRepository ticketRepository;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     // Inyectamos el ObjectMapper que configuraste en JacksonConfig
     @Autowired
@@ -83,7 +87,7 @@ public class TicketService {
         return response.getBody();
     }
 
-    public ContentResponsDto consultarPdfConPrompt(String sourceId) throws IOException {
+    public TicketModel procesarTicket(String sourceId,Long idUsuario) throws IOException {
         Map<String, Object> body = new HashMap<>();
         body.put("sourceId", sourceId);
         List<Map<String, String>> messages = new ArrayList<>();
@@ -94,7 +98,8 @@ public class TicketService {
                 + "  \"fecha\": \"YYYY-MM-DD\" o \"No encontrado\",\n"
                 + "  \"supermercado\": \"Nombre del supermercado en mayúsculas o 'No encontrado'\",\n"
                 + "  \"precioTotal\": número decimal o \"No encontrado\",\n"
-                + "  \"formaPago\": \"Nombre de la forma de pago en mayúsculas y guiones bajos o 'No encontrado'\"\n"
+                + "  \"formaPago\": \"Nombre de la forma de pago que sea alguno de estos valores PAYPAL, TARJETA, TRANSFERENCIA, BIZUM, EFECTIVO o 'NO_ENCONTRADO'\"\n"
+                + "  \"productos\": \"Listado de los productos, con las siguientes claves (nombre, cantidad y precio)'\"\n"
                 + "}\n\n"
                 + "Si algún dato no está presente o no puede ser extraído, pon el valor \"No encontrado\" para ese campo.\n\n"
                 + "Ejemplo de respuesta:\n\n"
@@ -129,17 +134,18 @@ public class TicketService {
 
         try {
             // Usamos ObjectMapper inyectado, que ya tiene JavaTimeModule registrado
+            System.out.println("Contenido recibido: " + content);
             TicketModel ticket = objectMapper.readValue(content, TicketModel.class);
+            ticket.setUsuario(usuarioRepository.findById(idUsuario).orElseThrow(() -> new RuntimeException("Usuario no encontrado")));
             System.out.println("Ticket mapeado correctamente: " + ticket);
+            ticketRepository.save(ticket);
+
+            return ticket;
         } catch (Exception e) {
             System.err.println("Contenido recibido NO es JSON válido:");
-            System.err.println(content);
-            throw e;
+            System.err.println(e);
+            return null;
         }
-
-        System.out.println("Contenido del prompt: " + content);
-
-        return responseBody;
     }
 
     public TicketModel parsearRespuestaYCrearTicket(String jsonRespuesta) throws IOException {
@@ -172,5 +178,11 @@ public class TicketService {
         }
 
         return ticket;
+    }
+
+    public List<TicketModel> obtenerMisTickets(Long idUsuario) {
+        List<TicketModel> tickets = ticketRepository.findByUsuarioId(idUsuario);
+        System.out.println("Obteniendo tickets para el usuario con ID: " + tickets);
+        return ticketRepository.findByUsuarioId(idUsuario);
     }
 }

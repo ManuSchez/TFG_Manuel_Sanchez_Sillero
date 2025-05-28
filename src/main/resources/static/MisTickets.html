@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Mis Tickets</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 30px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+
+    th {
+      background-color: #f2f2f2;
+      text-align: left;
+    }
+
+    h2 {
+      margin-top: 40px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Mis Tickets</h1>
+  <div id="tickets-container">Cargando tickets...</div>
+
+  <script>
+    const idUsuario = localStorage.idUsuario; // Cambia esto dinámicamente según el usuario autenticado
+
+    function mostrarTickets(tickets) {
+      const container = document.getElementById('tickets-container');
+      container.innerHTML = '';
+
+      if (tickets.length === 0) {
+        container.textContent = 'No se encontraron tickets.';
+        return;
+      }
+
+      tickets.forEach(ticket => {
+        const seccion = document.createElement('div');
+
+        const encabezado = document.createElement('h2');
+        encabezado.textContent = `Ticket #${ticket.id}`;
+        seccion.appendChild(encabezado);
+
+        const info = document.createElement('p');
+        info.innerHTML = `
+          <strong>Fecha:</strong> ${ticket.fecha} <br>
+          <strong>Supermercado:</strong> ${ticket.supermercado} <br>
+          <strong>Forma de Pago:</strong> ${ticket.formaPago} <br>
+          <strong>Total:</strong> €${ticket.precioTotal.toFixed(2)}
+        `;
+        seccion.appendChild(info);
+
+        // Tabla de productos
+        const tabla = document.createElement('table');
+        tabla.innerHTML = `
+          <thead>
+            <tr>
+              <th>ID Producto</th>
+              <th>Nombre</th>
+              <th>Cantidad</th>
+              <th>Precio</th>
+              <th>Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${ticket.productos.map(p => `
+              <tr>
+                <td>${p.id}</td>
+                <td>${p.nombre}</td>
+                <td>${p.cantidad}</td>
+                <td>€${p.precio.toFixed(2)}</td>
+                <td>€${(p.precio * p.cantidad).toFixed(2)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        `;
+        seccion.appendChild(tabla);
+
+        container.appendChild(seccion);
+      });
+    }
+
+    function cargarTickets() {
+      fetch(`http://localhost:8081/api/tickets/misTickets/${idUsuario}`)
+        .then(response => {
+          if (!response.ok) throw new Error('Error al obtener los tickets');
+          return response.json();
+        })
+        .then(data => mostrarTickets(data))
+        .catch(err => {
+          document.getElementById('tickets-container').textContent = 'Error al cargar los tickets.';
+          console.error(err);
+        });
+    }
+
+    // Llamada inicial
+    cargarTickets();
+  </script>
+
+</body>
+</html>

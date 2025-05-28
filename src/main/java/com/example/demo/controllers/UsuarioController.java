@@ -40,7 +40,8 @@ public ResponseEntity<?> login(@RequestBody Map<String, String> usuarioLogin) {
 
     Optional<UsuarioModel> usuarioValidado = usuarioService.validarUsuario(nombre, contrasena);
     if (usuarioValidado.isPresent()) {
-        return ResponseEntity.ok(Map.of("mensaje", "Login exitoso", "usuario", usuarioValidado.get().getNombre()));
+        System.out.println("Usuario ID: " + usuarioValidado.get().getId());
+        return ResponseEntity.ok( usuarioValidado.get().getId());
     } else {
         return ResponseEntity.status(401).body(Map.of("error", "Credenciales inválidas"));
     }

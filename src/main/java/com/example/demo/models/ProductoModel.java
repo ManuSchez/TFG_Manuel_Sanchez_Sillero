@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "productos")
 public class ProductoModel {
@@ -23,6 +25,7 @@ public class ProductoModel {
     private Double precio;
 
     @ManyToMany(mappedBy = "productos")
+    @JsonIgnore
     private Set<TicketModel> tickets;
 
     public Long getId() { return id; }
