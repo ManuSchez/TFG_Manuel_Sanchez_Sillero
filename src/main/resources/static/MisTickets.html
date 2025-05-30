@@ -5,39 +5,130 @@
   <title>Mis Tickets</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-bottom: 30px;
-    }
-
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-    }
-
-    th {
-      background-color: #f2f2f2;
-      text-align: left;
-    }
-
-    h2 {
-      margin-top: 40px;
+      margin: 0;
+      padding: 2rem;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
       color: #333;
     }
+  
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 2rem;
+      font-size: 2.5rem;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    #botones {
+      max-width: 900px;
+      margin: 0 auto 2rem auto;
+      text-align: right;
+    }
+
+    button {
+      background-color: #2575fc;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.6rem 1.2rem;
+      margin-left: 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+      box-shadow: 0 5px 15px #1a53c7cc;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #1a53c7;
+      box-shadow: 0 8px 20px #1540a1cc;
+    }
+  
+    #tickets-container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+  
+    h2 {
+      background-color: #2575fc;
+      color: white;
+      padding: 1rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      margin-top: 2rem;
+      font-size: 1.4rem;
+    }
+  
+    p {
+      background-color: #f9fbff;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+  
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 8px;
+      background-color: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      font-size: 1rem;
+      margin-bottom: 2rem;
+      overflow: hidden;
+    }
+  
+    th {
+      background-color: #2575fc;
+      color: white;
+      text-align: left;
+      padding: 1rem;
+      font-weight: bold;
+    }
+  
+    td {
+      padding: 1rem;
+      background-color: #f5f8ff;
+      border-top: 1px solid #e0e0e0;
+    }
+  
+    tr:last-child td {
+      border-bottom: 1px solid #e0e0e0;
+    }
+  
+    tr:hover td {
+      background-color: #dbe8ff;
+    }
   </style>
+  
 </head>
 <body>
 
   <h1>Mis Tickets</h1>
+
+  <div id="botones">
+    <button id="btnVolverEscanear">⬅️ Volver a escanear</button>
+    <button id="btnCerrarSesion">🚪 Cerrar sesión</button>
+  </div>
+
   <div id="tickets-container">Cargando tickets...</div>
 
   <script>
-    const idUsuario = localStorage.idUsuario; // Cambia esto dinámicamente según el usuario autenticado
+    const idUsuario = localStorage.getItem('idUsuario');
+
+    const btnCerrarSesion = document.getElementById('btnCerrarSesion');
+    const btnVolverEscanear = document.getElementById('btnVolverEscanear');
+
+    btnCerrarSesion.addEventListener('click', () => {
+      localStorage.removeItem('idUsuario'); 
+      window.location.href = 'index.html';   
+    });
+
+    btnVolverEscanear.addEventListener('click', () => {
+      mostrarFormulario('uploadPdfForm');
+    });
 
     function mostrarTickets(tickets) {
       const container = document.getElementById('tickets-container');
@@ -64,7 +155,6 @@
         `;
         seccion.appendChild(info);
 
-        // Tabla de productos
         const tabla = document.createElement('table');
         tabla.innerHTML = `
           <thead>
@@ -95,6 +185,11 @@
     }
 
     function cargarTickets() {
+      if (!idUsuario) {
+        window.location.href = 'index.html'; 
+        return;
+      }
+
       fetch(`http://localhost:8081/api/tickets/misTickets/${idUsuario}`)
         .then(response => {
           if (!response.ok) throw new Error('Error al obtener los tickets');
@@ -107,7 +202,6 @@
         });
     }
 
-    // Llamada inicial
     cargarTickets();
   </script>
 

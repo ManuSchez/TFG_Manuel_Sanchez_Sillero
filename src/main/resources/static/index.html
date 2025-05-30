@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Gestión de Tickets</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     html, body {
       height: 100%;
@@ -72,6 +73,23 @@
       box-shadow: 0 8px 20px #1540a1cc;
     }
 
+    #registerForm button {
+      margin-top: 2rem;
+    }
+
+    .btn-link {
+      display: inline-block;
+      margin-top: 1rem;
+      color: #2575fc;
+      text-decoration: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-link:hover {
+      text-decoration: underline;
+    }
+
     .mensaje {
       margin-top: 1rem;
       font-weight: 600;
@@ -93,46 +111,70 @@
       font-weight: 500;
     }
 
-    thead tr {
-      background: #2575fc;
+    thead th {
+      padding: 1rem 1.2rem;
+      background: linear-gradient(to right, #2575fc, #6a11cb);
       color: white;
-      font-weight: 700;
-      border-radius: 12px;
-      box-shadow: 0 3px 8px rgba(37, 117, 252, 0.5);
-      user-select: none;
+      text-transform: uppercase;
+      font-size: 0.95rem;
+      letter-spacing: 0.05rem;
     }
 
-    thead th {
-      padding: 1rem 1.5rem;
-      text-align: left;
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     tbody tr {
-      background: #f5f8ff;
-      box-shadow: 0 4px 12px rgba(37, 117, 252, 0.1);
+      background: #f9fbff;
+      box-shadow: 0 4px 10px rgba(37, 117, 252, 0.1);
       border-radius: 10px;
-      transition: background-color 0.25s ease;
-    }
-
-    tbody tr:hover {
-      background-color: #d0e2ff;
+      margin-bottom: 10px;
+      display: block;
+      animation: fadeIn 0.3s ease forwards;
     }
 
     tbody td {
-      padding: 1rem 1.5rem;
-      border-left: 4px solid transparent;
+      display: block;
+      padding: 0.75rem 1.2rem;
+      border-bottom: 1px solid #e0eafc;
     }
 
-    tbody td:first-child {
-      font-weight: 600;
+    tbody tr td:last-child {
+      border-bottom: none;
+    }
+
+    td table {
+      background: #f0f6ff;
+      border-radius: 10px;
+      margin-top: 0.8rem;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    td table thead {
+      background-color: #d6eaff;
+      color: #003a8c;
+    }
+
+    td table thead th,
+    td table td {
+      padding: 0.6rem 1rem;
+      font-size: 0.95rem;
+    }
+
+    td table td:nth-child(3) {
+      text-align: right;
+      font-weight: bold;
+      color: #003a8c;
+    }
+
+    tr:last-child td {
+      background: #e6f0ff;
+      font-weight: bold;
       color: #1a3d8f;
-      border-left-color: #2575fc;
-      border-radius: 10px 0 0 10px;
-    }
-
-    tbody td:last-child {
-      border-radius: 0 10px 10px 0;
-      color: #0d1b47;
     }
 
     #bienvenido {
@@ -162,6 +204,22 @@
       cursor: pointer;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     }
+#datosTabla thead {
+  display: none;
+}
+
+#datosTabla tbody tr td table {
+  margin-left: 0 !important;  
+  width: auto !important;      
+  border-collapse: collapse;
+}
+
+#datosTabla tbody tr td table th,
+#datosTabla tbody tr td table td {
+  text-align: left !important;
+  padding: 0.6rem 1rem !important;
+}
+
   </style>
 </head>
 <body>
@@ -212,18 +270,18 @@
       document.getElementById('uploadPdfForm').style.display = 'none';
       document.getElementById('resultadoTitulo').style.display = 'none';
       document.getElementById('datosTabla').style.display = 'none';
-
+  
       document.getElementById(formId).style.display = 'block';
       document.getElementById('loginMensaje').textContent = '';
       document.getElementById('registerMensaje').textContent = '';
       document.getElementById('pdfMensaje').textContent = '';
     }
-
+  
     document.getElementById('loginForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const nombre = document.getElementById('loginUser').value;
       const contrasena = document.getElementById('loginPass').value;
-
+  
       fetch('http://localhost:8081/api/auth/login', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -234,30 +292,41 @@
         localStorage.setItem('idUsuario', data);
         document.getElementById('loginMensaje').textContent = '✅ Sesión iniciada correctamente';
         mostrarFormulario('uploadPdfForm');
-
+  
         const bienvenidoDiv = document.getElementById('bienvenido');
         bienvenidoDiv.innerHTML = `Bienvenido, ${nombre}`;
-
+  
         const botonVerTickets = document.createElement('button');
         botonVerTickets.textContent = '📄 Mis tickets';
         botonVerTickets.addEventListener('click', () => {
           window.location.href = 'MisTickets.html';
         });
-
+  
+        const botonCerrarSesion = document.createElement('button');
+        botonCerrarSesion.textContent = '🚪 Cerrar sesión';
+        botonCerrarSesion.style.marginTop = '0.5rem';
+        botonCerrarSesion.addEventListener('click', () => {
+          localStorage.removeItem('idUsuario');
+          document.getElementById('bienvenido').style.display = 'none';
+          mostrarFormulario('loginForm');
+        });
+  
         bienvenidoDiv.appendChild(document.createElement('br'));
         bienvenidoDiv.appendChild(botonVerTickets);
+        bienvenidoDiv.appendChild(document.createElement('br'));
+        bienvenidoDiv.appendChild(botonCerrarSesion);
         bienvenidoDiv.style.display = 'block';
       })
       .catch(err => {
         document.getElementById('loginMensaje').textContent = '❌ ' + err;
       });
     });
-
+  
     document.getElementById('registerForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const nombre = document.getElementById('registerUser').value;
       const contrasena = document.getElementById('registerPass').value;
-
+  
       fetch('http://localhost:8081/api/auth/register', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -272,31 +341,31 @@
         document.getElementById('registerMensaje').textContent = '❌ ' + err;
       });
     });
-
+  
     const uploadForm = document.getElementById('uploadPdfForm');
     const fileInput = document.getElementById('pdfFile');
     const pdfMensaje = document.getElementById('pdfMensaje');
     const tabla = document.getElementById('datosTabla');
     const tbody = tabla.querySelector('tbody');
     const tituloResultado = document.getElementById('resultadoTitulo');
-
+  
     uploadForm.addEventListener('submit', e => {
       e.preventDefault();
       pdfMensaje.textContent = '';
       pdfMensaje.style.color = 'black';
-
+  
       if (!fileInput.files.length) {
         pdfMensaje.textContent = 'Por favor selecciona un archivo PDF.';
         pdfMensaje.style.color = 'red';
         return;
       }
-
+  
       const formData = new FormData();
       formData.append('file', fileInput.files[0]);
-
+  
       pdfMensaje.textContent = 'Procesando PDF...';
       const idUsuario = localStorage.getItem('idUsuario');
-
+  
       fetch(`http://localhost:8081/api/tickets/upload-pdf?idUsuario=${idUsuario}`, {
         method: 'POST',
         body: formData
@@ -306,63 +375,68 @@
         return response.json();
       })
       .then(data => {
-    tbody.innerHTML = '';
-    
-    for (const [clave, valor] of Object.entries(data)) {
-      if (clave.toLowerCase() === 'id') continue;
-
-      const tr = document.createElement('tr');
-      const tdClave = document.createElement('td');
-      tdClave.textContent = clave.charAt(0).toUpperCase() + clave.slice(1);
-      const tdValor = document.createElement('td');
-
-      if (clave.toLowerCase() === 'productos' && Array.isArray(valor)) {
-        // Crear subtabla de productos
-        const subTabla = document.createElement('table');
-        subTabla.border = '0';
-        subTabla.cellPadding = '4';
-        subTabla.style.marginTop = '5px';
-
-        const subTbody = document.createElement('tbody');
-
-        valor.forEach(producto => {
-          const filaProducto = document.createElement('tr');
-          const subtotal = producto.precio * producto.cantidad;
-
-          filaProducto.innerHTML = `
-            <td>${producto.nombre}</td>
-            <td>${producto.cantidad}</td>
-            <td>${subtotal.toFixed(2)}€</td>
-          `;
-          subTbody.appendChild(filaProducto);
-        });
-
-        subTabla.appendChild(subTbody);
-        tdValor.appendChild(subTabla);
-
-    } else {
-      // Campo normal
-      let valorMostrar = (valor === null || valor === '') ? 'No encontrado' : valor;
-      if (clave.toLowerCase() === 'preciototal') valorMostrar += ' €';
-      tdValor.textContent = valorMostrar;
-    }
-
-    tr.appendChild(tdClave);
-    tr.appendChild(tdValor);
-    tbody.appendChild(tr);
-  }
-
-  tituloResultado.style.display = 'block';
-  tabla.style.display = 'table';
-  pdfMensaje.textContent = '✅ PDF procesado correctamente.';
-  pdfMensaje.style.color = 'green';
-})
-
+        tbody.innerHTML = '';
+  
+        for (const [clave, valor] of Object.entries(data)) {
+          if (clave.toLowerCase() === 'id') continue;
+  
+          const tr = document.createElement('tr');
+          tr.style.animation = 'fadeIn 0.3s ease forwards';
+  
+          const tdClave = document.createElement('td');
+          tdClave.innerHTML = `<i class="fas fa-info-circle" style="margin-right: 6px; color: #2575fc;"></i> ${clave.charAt(0).toUpperCase() + clave.slice(1)}`;
+          const tdValor = document.createElement('td');
+  
+          if (clave.toLowerCase() === 'productos' && Array.isArray(valor)) {
+            const subTabla = document.createElement('table');
+            const subThead = document.createElement('thead');
+            subThead.innerHTML = `
+              <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Subtotal</th>
+              </tr>
+            `;
+            const subTbody = document.createElement('tbody');
+  
+            valor.forEach(producto => {
+              const filaProducto = document.createElement('tr');
+              const subtotal = producto.precio * producto.cantidad;
+  
+              filaProducto.innerHTML = `
+                <td>${producto.nombre}</td>
+                <td>${producto.cantidad}</td>
+                <td>${subtotal.toFixed(2)}€</td>
+              `;
+              subTbody.appendChild(filaProducto);
+            });
+  
+            subTabla.appendChild(subThead);
+            subTabla.appendChild(subTbody);
+            tdValor.appendChild(subTabla);
+  
+          } else {
+            let valorMostrar = (valor === null || valor === '') ? 'No encontrado' : valor;
+            if (clave.toLowerCase() === 'preciototal') valorMostrar += ' €';
+            tdValor.textContent = valorMostrar;
+          }
+  
+          tr.appendChild(tdClave);
+          tr.appendChild(tdValor);
+          tbody.appendChild(tr);
+        }
+  
+        tituloResultado.style.display = 'block';
+        tabla.style.display = 'table';
+        pdfMensaje.textContent = '✅ PDF procesado correctamente.';
+        pdfMensaje.style.color = 'green';
+      })
       .catch(err => {
         pdfMensaje.textContent = '❌ ' + err.message;
         pdfMensaje.style.color = 'red';
       });
     });
   </script>
+  
 </body>
 </html>

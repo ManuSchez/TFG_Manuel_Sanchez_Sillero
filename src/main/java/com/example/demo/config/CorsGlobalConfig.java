@@ -16,8 +16,8 @@ public class CorsGlobalConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowCredentials(false); // ⚠️ true requiere origen explícito, no "*"
-        config.addAllowedOrigin("*"); // Solo para desarrollo. Usa origen fijo en producción
+        config.setAllowCredentials(false); 
+        config.addAllowedOrigin("*"); 
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         config.setMaxAge(3600L);

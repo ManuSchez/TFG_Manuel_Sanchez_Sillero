@@ -14,7 +14,7 @@ public enum Supermercado {
     EROSKI,
     HIPERCOR,
     CONSUM,
-    OTRO;  // Valor por defecto para supermercados no listados
+    OTRO;  
 
     @JsonCreator
     public static Supermercado fromString(String value) {
